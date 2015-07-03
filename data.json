@@ -1,0 +1,61 @@
+{
+	"planetFieldTypes" : {
+		"FOOD" : "",
+		"INDUS" : "",
+		"NEUTRAL" : "",
+		"NONE" : "",
+		"RES" : ""
+	},
+	"game" : {
+		"turnCount" : 0
+	},
+	"planets" : {
+		"FIRST" : {
+			"fields" : [{
+					"available" : true,
+					"originX" : 200,
+					"originY" : 200,
+					"type" : "none"
+				}, {
+					"available" : true,
+					"originX" : 275,
+					"originY" : 230
+				}, {
+					"available" : true,
+					"originX" : 350,
+					"originY" : 260
+				}, {
+					"available" : true,
+					"originX" : 425,
+					"originY" : 290
+				}, {
+					"available" : true,
+					"originX" : 500,
+					"originY" : 320
+				}, {
+					"available" : true,
+					"originX" : 575,
+					"originY" : 350
+				}, {
+					"available" : true,
+					"originX" : 650,
+					"originY" : 380
+				}, {
+					"available" : true,
+					"originX" : 725,
+					"originY" : 410
+				}, {
+					"available" : true,
+					"originX" : 800,
+					"originY" : 440
+				}
+			],
+
+			"name" : "Methryon",
+			"owner" : "",
+			"size" : "300",
+			"solarSystem" : "",
+			"planetType" : "oxygen"
+		}
+	}
+}
