@@ -1,4 +1,3 @@
-
 (function (glob, factory) {
 	factory(glob);
 }
@@ -17,10 +16,10 @@
 		 * PROPERTIES
 		\*/
 		H.properties = {
-			"Planet.planet.originX.default" : 600,
-			"Planet.planet.originY.default" : 600,
-			"PlanetField.width.default" : 150,
-			"PlanetField.height.default" : 60,
+			"Planet.planet.originX.default" : 550,
+			"Planet.planet.originY.default" : 550,
+			"PlanetField.width.default" : 140,
+			"PlanetField.height.default" : 50,
 		};
 		function getProperty(propertyName) {
 			return H.properties[propertyName];
@@ -70,7 +69,7 @@
 			//planet.render();
 			//planet.save();
 
-			var generatedP = Planet.generate("NewP", "oxygen", 300);
+			var generatedP = Planet.generate("NewP", "oxygen", 350);
 			generatedP.render();
 		};
 
@@ -140,7 +139,7 @@
 			 * Effectue le rendu de la planète
 			\*/
 			planetproto.render = function () {
-				var planetRenderer = rendering()
+				this.planetRenderer = rendering()
 					.circle(Planet.originX, Planet.originY, this.size)
 					.attr('fill', '#bbbbbb')
 					.click(
@@ -150,7 +149,7 @@
 					planetRenderer.click(unselect);
 				};
 				function unselect() {
-					planetRenderer.attr('fill', 'gray')
+					planetRenderer.attr('fill', '#bbbbbb')
 					planetRenderer.click(select);
 				};
 				function refreshPlanet() {};
@@ -174,6 +173,11 @@
 				H.data["planets"][this.name] = this;
 			};
 
+			planetproto.isPointInside = function(x,y){
+				var result = (Math.pow(x - Planet.originX, 2) + Math.pow(y - Planet.originY, 2)) < Math.pow(this.size, 2);
+				return result;
+			};
+			
 			/*\
 			 * Permet de créer entièrement une planète
 			\*/
@@ -185,15 +189,32 @@
 
 				var result = new Planet(generatedData);
 
-				var firstFieldData = {};
-				firstFieldData.originX = Planet.originX - PlanetField.halfWidth();
-				firstFieldData.originY = Planet.originY - result.size; // + PlanetField.halfHeight();
-				firstFieldData.available = true;
+				var fieldData = {};
+				fieldData.X = Planet.originX;
+				fieldData.Y = Planet.originY; // + PlanetField.halfHeight();
+				fieldData.available = true;
 
-				var planetField = new PlanetField(result, firstFieldData);
-				result.addPlanetField(planetField);
-
-				// for(var i = 0; i
+				var planetField = new PlanetField(result, fieldData);
+				var first = planetField;
+				
+				generateRecursively(result, first, PlanetField.prototype.getBackLeft);
+				generateRecursively(result, first, PlanetField.prototype.getFrontRight);
+				
+				for (var planetField in result["planetFields"]){
+					generateRecursively(result, result["planetFields"][planetField], PlanetField.prototype.getFrontLeft);
+					generateRecursively(result, result["planetFields"][planetField], PlanetField.prototype.getBackRight);
+				}
+				
+				// Génération simple des champs, en suivant une axe de récupération des champs
+				function generateRecursively(planet, planetField, nextCallback){
+					var fieldPoint = nextCallback.call(planetField);
+					
+					while(planet.isPointInside(fieldPoint.X, fieldPoint.Y)){
+						fieldPoint.available = true;
+						planetField = new PlanetField(planet, fieldPoint);
+						fieldPoint = nextCallback.call(planetField);
+					}
+				}
 
 				return result;
 			};
@@ -210,10 +231,11 @@
 			if (typeof planetFieldData == "String") {
 				return PlanetField(JSON.parse(planetFieldData));
 			}
-			this.originX = planetFieldData["originX"];
-			this.originY = planetFieldData["originY"];
+			this.originX = planetFieldData["X"];
+			this.originY = planetFieldData["Y"];
 			this.available = planetFieldData["available"];
 			this.planetFieldType = "none";
+			planet.addPlanetField(this);
 		}
 		(function (planetfieldproto) {
 			// Constantes
@@ -233,15 +255,7 @@
 			 * Effectue le rendu du field
 			\*/
 			planetfieldproto.render = function () {
-				var halfHeight = PlanetField.halfHeight();
-				var halfWidth = PlanetField.halfWidth();
-				var path =
-					"M" + (this.originX) + " " + (this.originY)
-					 + "l" + (halfWidth) + " " + (halfHeight)
-					 + "l" + (halfWidth) + " " + (-halfHeight)
-					 + "l" + (-halfWidth) + " " + (-halfHeight)
-					 + "Z";
-
+				var path = this.diamoundPath();
 				var planetFieldRenderer = rendering().path(path)
 					.attr('fill', 'gray').attr('fill-opacity', '0.7')
 					.attr('stroke-width', '0.5')
@@ -267,20 +281,60 @@
 					planetFieldRenderer.click(select);
 				}
 			};
+			
+			planetfieldproto.diamoundPath = function(){
+				var halfHeight = PlanetField.halfHeight();
+				var halfWidth = PlanetField.halfWidth();
+				var path =
+					"M" + (this.originX - halfWidth) + " " + (this.originY)
+					 + "l" + (halfWidth) + " " + (halfHeight)
+					 + "l" + (halfWidth) + " " + (-halfHeight)
+					 + "l" + (-halfWidth) + " " + (-halfHeight)
+					 + "Z";
+				return path;
+			};
+			
+			/*\
+			 * Génère les données relatives aux champ suivant.
+			\*/
+			planetfieldproto.getBackLeft = function () {
+				var result = {};
+				result.X = this.originX - PlanetField.halfWidth();
+				result.Y = this.originY - PlanetField.halfHeight();
+				return result;
+			};
+				
+			/*\
+			 * Génère les données relatives aux champ suivant.
+			\*/
+			planetfieldproto.getBackRight = function () {
+				var result = {};
+				result.X = this.originX + PlanetField.halfWidth();
+				result.Y = this.originY - PlanetField.halfHeight();
+				return result;
+			};
+			
+			/*\
+			 * Génère les données relatives aux champ suivant.
+			\*/
+			planetfieldproto.getFrontRight = function () {
+				var result = {};
+				result.X = this.originX + PlanetField.halfWidth();
+				result.Y = this.originY + PlanetField.halfHeight();
+				return result;
+			};
 
 			/*\
 			 * Génère les données relatives aux champ suivant.
 			\*/
-			planetfieldproto.nextRightFieldData = function () {
-				var nextOriginX = this.originX + this.halfWidth();
-				var nextOriginY = this.originY + this.halfHeight();
-
+			planetfieldproto.getFrontLeft = function () {
 				var result = {};
-				result.originX = nextOriginX;
-				result.originY = nextOriginY;
+				result.X = this.originX - PlanetField.halfWidth();
+				result.Y = this.originY + PlanetField.halfHeight();
 				return result;
-
 			};
+			
+			
 			/*\
 			 * Méthode statique, permettant de récupérer le champ de planète suivant pour une planète donnée, et un champ donné.
 			\*/
